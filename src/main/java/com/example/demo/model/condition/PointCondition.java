@@ -2,6 +2,8 @@ package com.example.demo.model.condition;
 
 
 import com.example.demo.meta.PointActionType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.swagger.annotations.ApiModelProperty;
 import jdk.nashorn.internal.ir.annotations.Ignore;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,11 +19,12 @@ public class PointCondition {
 
     @Min(value = 1)
     @NotNull
+    @ApiModelProperty(value = "포인트")
     private long point;
 
-    @Ignore
+    @JsonIgnore
     private Long memberId;
 
-    @Ignore
+    @JsonIgnore
     private PointActionType pointActionType;
 }
