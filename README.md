@@ -16,6 +16,7 @@ POINT-API
 - 포인트 사용 취소 : http://localhost:8080/swagger-ui/index.html#/point-controller/cancelPointUsingDELETE
 > DB 접속
 - http://localhost:8080/h2
+- JDBC URL: jdbc:h2:./point
 - connect
 > 환경 및 설치
 - java 1.8

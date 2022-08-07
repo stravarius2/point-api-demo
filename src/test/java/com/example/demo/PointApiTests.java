@@ -68,7 +68,7 @@ public class PointApiTests {
     }
 
     @Test
-    public void 포인트_적립_조회() throws Exception {
+    public void 포인트_적립() throws Exception {
 
         //10000포인트 적립
         //1000포인트 적립
@@ -164,7 +164,7 @@ public class PointApiTests {
     }
 
     @Test
-    public void 포인트_적립_목록_조회() throws Exception{
+    public void 포인트_내역_조회() throws Exception{
 
         //10000원 적립
         //5000원 사용
