@@ -15,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityNotFoundException;
@@ -25,6 +24,7 @@ import java.util.stream.Collectors;
 
 import static com.example.demo.meta.Common.POINT_NOT_ENOUGH_MESSAGE;
 import static com.example.demo.meta.PointActionType.*;
+import static com.example.demo.utils.CommonUtil.getExpiredDate;
 
 @Slf4j
 @Component
@@ -44,7 +44,7 @@ public class PointProvider {
         return pointHistoryRepository.findAllByMemberIdOrderByIdDesc(memberId, pageRequest);
     }
 
-    @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_UNCOMMITTED)
+    @Transactional(rollbackFor = Exception.class)
     public PointBalanceEntity setPoint(PointCondition condition){
 
         PointBalanceEntity pointBalanceEntity = pointBalanceRepository.findByMemberId(condition.getMemberId()).orElseGet(PointBalanceEntity::new);
@@ -78,6 +78,11 @@ public class PointProvider {
             expiredPoint = usePointAndGetIfPointExpired(pointBalanceEntity, pointHistoryEntity, point);
         }
 
+        totalPoint = totalPoint + expiredPoint;
+        if(totalPoint < 0L){
+            throw new PointNotEnoughException(POINT_NOT_ENOUGH_MESSAGE);
+        }
+
         pointBalanceEntity.setTotalPoint(totalPoint + expiredPoint);
         pointBalanceRepository.save(pointBalanceEntity);
 
@@ -92,9 +97,7 @@ public class PointProvider {
         return pointHistoryEntity.getPointBalanceEntity();
     }
 
-    private LocalDate getExpiredDate(){
-        return LocalDate.now().plusYears(1);
-    }
+
 
     private long usePointAndGetIfPointExpired(PointBalanceEntity pointBalanceEntity, PointHistoryEntity pointHistoryEntity, long point){
 

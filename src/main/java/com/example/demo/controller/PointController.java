@@ -11,12 +11,14 @@ import io.swagger.annotations.ApiParam;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 
 import static com.example.demo.meta.PointActionType.SAVE;
 import static com.example.demo.meta.PointActionType.USE;
+import static com.example.demo.utils.CommonUtil.bindingResult;
 
 @Slf4j
 @RestController
@@ -34,14 +36,20 @@ public class PointController {
 
     @GetMapping("/point/history")
     @ApiOperation(value = "포인트 내역 조회", response = PointHistory.class)
-    public Page<PointHistory> getPointHistory(@RequestHeader("memberId") @ApiParam("회원아이디") Long memberId, @ModelAttribute @Valid PointHistoryCondition condition) {
+    public Page<PointHistory> getPointHistory(@RequestHeader("memberId") @ApiParam("회원아이디") Long memberId
+            , @ModelAttribute @Valid PointHistoryCondition condition
+            , BindingResult bindingResult) {
+        bindingResult(bindingResult);
         condition.setMemberId(memberId);
         return pointService.getPointHistory(condition);
     }
 
     @PostMapping("/point/save")
     @ApiOperation(value = "포인트 적립", response = PointBalance.class)
-    public PointBalance savePoint(@RequestHeader("memberId") @ApiParam("회원아이디") Long memberId, @RequestBody PointCondition condition) {
+    public PointBalance savePoint(@RequestHeader("memberId") @ApiParam("회원아이디") Long memberId
+            , @RequestBody PointCondition condition
+            , BindingResult bindingResult) {
+        bindingResult(bindingResult);
         condition.setMemberId(memberId);
         condition.setPointActionType(SAVE);
         return pointService.setPoint(condition);
@@ -49,7 +57,10 @@ public class PointController {
 
     @PostMapping("/point/use")
     @ApiOperation(value = "포인트 사용", response = PointBalance.class)
-    public PointBalance usePoint(@RequestHeader("memberId") @ApiParam("회원아이디") Long memberId, @RequestBody PointCondition condition) {
+    public PointBalance usePoint(@RequestHeader("memberId") @ApiParam("회원아이디") Long memberId
+            , @RequestBody PointCondition condition
+            , BindingResult bindingResult) {
+        bindingResult(bindingResult);
         condition.setMemberId(memberId);
         condition.setPointActionType(USE);
         return pointService.setPoint(condition);
@@ -57,7 +68,10 @@ public class PointController {
 
     @DeleteMapping("/point/cancel")
     @ApiOperation(value = "포인트 사용 취소(Rollback)", response = PointBalance.class)
-    public PointBalance cancelPoint(@RequestHeader("memberId") @ApiParam("회원아이디") Long memberId, @ModelAttribute @Valid PointCancelCondition condition) {
+    public PointBalance cancelPoint(@RequestHeader("memberId") @ApiParam("회원아이디") Long memberId
+            , @ModelAttribute @Valid PointCancelCondition condition
+            , BindingResult bindingResult) {
+        bindingResult(bindingResult);
         condition.setMemberId(memberId);
         return pointService.cancelPoint(condition);
     }
