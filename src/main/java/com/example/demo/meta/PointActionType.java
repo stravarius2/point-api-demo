@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 public enum PointActionType {
     SAVE("적립"),
     USE("사용"),
-    CANCEL("사용취소"),
     EXPIRED("만료");
 
    private final String description;
