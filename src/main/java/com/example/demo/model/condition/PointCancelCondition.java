@@ -1,6 +1,7 @@
 package com.example.demo.model.condition;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModelProperty;
 import jdk.nashorn.internal.ir.annotations.Ignore;
 import lombok.Getter;
@@ -18,6 +19,6 @@ public class PointCancelCondition {
     @ApiModelProperty(value = "포인트 내역 아이디")
     private Long id;
 
-    @Ignore
+    @JsonIgnore
     private Long memberId;
 }

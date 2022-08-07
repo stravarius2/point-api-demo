@@ -21,6 +21,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.time.LocalDate;
 
@@ -37,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @EnableMockMvc
-public class PointTests {
+public class PointApiTests {
 
     @Autowired
     MockMvc mockMvc;
@@ -77,7 +78,7 @@ public class PointTests {
         pointCondition.setPoint(10000L);
 
         mockMvc.perform(post("/api/v1/point/save")
-                        .header("memberId", this.memberId)
+                        .header("memberId", memberId)
                         .content(objectMapper.writeValueAsString(pointCondition))
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -87,7 +88,7 @@ public class PointTests {
         pointCondition.setPoint(1000L);
 
         mockMvc.perform(post("/api/v1/point/save")
-                        .header("memberId", this.memberId)
+                        .header("memberId", memberId)
                         .content(objectMapper.writeValueAsString(pointCondition))
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -95,7 +96,7 @@ public class PointTests {
                 .andReturn();
 
         MvcResult result = mockMvc.perform(get("/api/v1/point")
-                        .header("memberId", this.memberId)
+                        .header("memberId", memberId)
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andDo(print())
@@ -104,7 +105,7 @@ public class PointTests {
         JSONObject response = new JSONObject(result.getResponse().getContentAsString());
 
         Assertions.assertEquals(response.getLong("totalPoint"), 11000L);
-        Assertions.assertEquals(response.getLong("memberId"), memberId);
+
     }
 
     @Test
@@ -116,20 +117,22 @@ public class PointTests {
         //7000포인트 사용
         //초과 사용이므로 PointNotEnoughException
 
+        JSONObject response;
+
+        //10000 적립
         PointCondition pointCondition = new PointCondition();
         pointCondition.setPoint(10000L);
-
         mockMvc.perform(post("/api/v1/point/save")
-                        .header("memberId", this.memberId)
+                        .header("memberId", memberId)
                         .content(objectMapper.writeValueAsString(pointCondition))
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andDo(print())
                 .andReturn();
 
-        pointCondition = new PointCondition();
-        pointCondition.setPoint(5000L);
 
+        //5000 사용
+        pointCondition.setPoint(5000L);
         mockMvc.perform(post("/api/v1/point/use")
                         .header("memberId", memberId)
                         .content(objectMapper.writeValueAsString(pointCondition))
@@ -138,19 +141,20 @@ public class PointTests {
                 .andDo(print())
                 .andReturn();
 
+        //포인트 잔액 조회
         MvcResult result = mockMvc.perform(get("/api/v1/point")
                         .header("memberId", memberId)
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andDo(print())
                 .andReturn();
-        JSONObject response = new JSONObject(result.getResponse().getContentAsString());
+
+        response = new JSONObject(result.getResponse().getContentAsString());
 
         Assertions.assertEquals(response.getLong("totalPoint"), 5000L);
-        Assertions.assertEquals(response.getLong("memberId"), memberId);
 
+        //잔여 5000 사용요청 7000시 실패 확인
         pointCondition.setPoint(7000L);
-
         mockMvc.perform(post("/api/v1/point/use")
                 .header("memberId", memberId)
                 .content(objectMapper.writeValueAsString(pointCondition))
@@ -167,12 +171,14 @@ public class PointTests {
         //조회 결과
         //5000원 사용
         //10000원 적립
-        Long savePoint = 10000L;
-        Long usePoint = 5000L;
 
+        JSONArray responseArray;
+        long savePoint = 10000L;
+        long usePoint = 5000L;
+
+        //10000 적립
         PointCondition pointCondition = new PointCondition();
         pointCondition.setPoint(savePoint);
-
         mockMvc.perform(post("/api/v1/point/save")
                         .header("memberId", memberId)
                         .content(objectMapper.writeValueAsString(pointCondition))
@@ -181,8 +187,8 @@ public class PointTests {
                 .andDo(print())
                 .andReturn();
 
+        //5000 사용
         pointCondition.setPoint(usePoint);
-
         mockMvc.perform(post("/api/v1/point/use")
                         .header("memberId", memberId)
                         .content(objectMapper.writeValueAsString(pointCondition))
@@ -191,10 +197,11 @@ public class PointTests {
                 .andDo(print())
                 .andReturn();
 
+
+        //내역 조회
         PointHistoryCondition historyCondition = new PointHistoryCondition();
         historyCondition.setPage(1);
         historyCondition.setSize(10);
-
         MvcResult result = mockMvc.perform(get("/api/v1/point/history")
                         .header("memberId", memberId)
                         .content(objectMapper.writeValueAsString(historyCondition))
@@ -203,13 +210,14 @@ public class PointTests {
                 .andDo(print())
                 .andReturn();
 
-        JSONArray response = new JSONObject(result.getResponse().getContentAsString()).getJSONArray("content");
+        responseArray = new JSONObject(result.getResponse().getContentAsString()).getJSONArray("content");
 
-        Assertions.assertEquals(response.getJSONObject(0).getString("pointActionType"), USE.getDescription());
-        Assertions.assertEquals(response.getJSONObject(0).getLong("point"), usePoint * -1);
+        //조회 결과는 최근순 사용 -> 적립
+        Assertions.assertEquals(responseArray.getJSONObject(0).getString("pointActionType"), USE.getDescription());
+        Assertions.assertEquals(responseArray.getJSONObject(0).getLong("point"), usePoint * -1);
 
-        Assertions.assertEquals(response.getJSONObject(1).getString("pointActionType"), SAVE.getDescription());
-        Assertions.assertEquals(response.getJSONObject(1).getLong("point"), savePoint);
+        Assertions.assertEquals(responseArray.getJSONObject(1).getString("pointActionType"), SAVE.getDescription());
+        Assertions.assertEquals(responseArray.getJSONObject(1).getLong("point"), savePoint);
     }
 
     @Test
@@ -222,6 +230,69 @@ public class PointTests {
         //첫번째로 적립된 1000포인트중 500포인트 사용
         //남은 포인트 500
 
+        JSONObject response;
+
+        //3000 적립
+        PointCondition pointCondition = new PointCondition();
+        pointCondition.setPoint(1000L);
+        for(int i = 0; i < 3; i++){
+            mockMvc.perform(post("/api/v1/point/save")
+                            .header("memberId", memberId)
+                            .content(objectMapper.writeValueAsString(pointCondition))
+                            .contentType(APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andReturn();
+        }
+
+        //1500 사용
+        pointCondition.setPoint(1500L);
+        MvcResult result =  mockMvc.perform(post("/api/v1/point/use")
+                        .header("memberId", memberId)
+                        .content(objectMapper.writeValueAsString(pointCondition))
+                        .contentType(APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andReturn();
+
+        response = new JSONObject(result.getResponse().getContentAsString());
+        Assertions.assertEquals(response.getLong("totalPoint"), 1500L);
+
+        //이미 500원이 사용된 두번째 적립의 기간 만료 처리
+        Long historyId = pointHistoryRepository.findAllByMemberId(memberId).get(2).getId();
+        PointHistoryDetailEntity detailEntity = pointHistoryDetailRepository.findAllByPointHistoryId(historyId).get(1);
+        detailEntity.setExpiredAt(LocalDate.now().minusDays(1));
+        pointHistoryDetailRepository.save(detailEntity);
+
+        //500 사용
+        pointCondition.setPoint(500L);
+        result = mockMvc.perform(post("/api/v1/point/use")
+                        .header("memberId", memberId)
+                        .content(objectMapper.writeValueAsString(pointCondition))
+                        .contentType(APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andReturn();
+
+        response = new JSONObject(result.getResponse().getContentAsString());
+
+        //잔여 1500 -> 500포인트 만료 -> 500포인트 사용 -> 잔여 500
+        Assertions.assertEquals(response.getLong("totalPoint"), 500L);
+
+    }
+
+    @Test
+    public void 포인트_사용취소() throws Exception{
+
+        //1000포인트 X 3 적립
+        //2500포인트 사용
+        //사용취소
+        //3000포인트 확인
+        //내역 확인
+
+        JSONObject response;
+        JSONArray responseArray;
+
+        //적립 3000
         PointCondition pointCondition = new PointCondition();
         pointCondition.setPoint(1000L);
 
@@ -234,28 +305,9 @@ public class PointTests {
                     .andReturn();
         }
 
-        pointCondition.setPoint(1500L);
-
+        //사용 2500
+        pointCondition.setPoint(2500L);
         MvcResult result =  mockMvc.perform(post("/api/v1/point/use")
-                        .header("memberId", memberId)
-                        .content(objectMapper.writeValueAsString(pointCondition))
-                        .contentType(APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andDo(print())
-                .andReturn();
-
-        JSONObject response = new JSONObject(result.getResponse().getContentAsString());
-
-        Assertions.assertEquals(response.getLong("totalPoint"), 1500L);
-
-        Long historyId = pointHistoryRepository.findAllByMemberId(memberId).get(2).getId();
-        PointHistoryDetailEntity detailEntity = pointHistoryDetailRepository.findAllByPointHistoryId(historyId).get(1);
-        detailEntity.setExpiredAt(LocalDate.now().minusDays(1));
-        pointHistoryDetailRepository.save(detailEntity);
-
-        pointCondition.setPoint(500L);
-
-        result = mockMvc.perform(post("/api/v1/point/use")
                         .header("memberId", memberId)
                         .content(objectMapper.writeValueAsString(pointCondition))
                         .contentType(APPLICATION_JSON))
@@ -265,6 +317,50 @@ public class PointTests {
 
         response = new JSONObject(result.getResponse().getContentAsString());
         Assertions.assertEquals(response.getLong("totalPoint"), 500L);
+
+        //내역 확인
+        PointHistoryCondition historyCondition = new PointHistoryCondition();
+        historyCondition.setPage(1);
+        historyCondition.setSize(10);
+
+        result = mockMvc.perform(get("/api/v1/point/history")
+                        .header("memberId", memberId)
+                        .content(objectMapper.writeValueAsString(historyCondition))
+                        .contentType(APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andReturn();
+
+        responseArray = new JSONObject(result.getResponse().getContentAsString()).getJSONArray("content");
+        Assertions.assertEquals(responseArray.getJSONObject(0).getString("pointActionType"), USE.getDescription());
+        Assertions.assertEquals(responseArray.getJSONObject(0).getLong("point"), -2500L);
+
+        //사용취소
+        Long historyId = responseArray.getJSONObject(0).getLong("id");
+        result = mockMvc.perform(MockMvcRequestBuilders.delete("/api/v1/point/cancel")
+                        .header("memberId", memberId)
+                        .param("id", String.valueOf(historyId))
+                        .contentType(APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andReturn();
+
+        response = new JSONObject(result.getResponse().getContentAsString());
+        Assertions.assertEquals(response.getLong("totalPoint"), 3000L);
+
+        //내역확인
+        result = mockMvc.perform(get("/api/v1/point/history")
+                        .header("memberId", memberId)
+                        .content(objectMapper.writeValueAsString(historyCondition))
+                        .contentType(APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andReturn();
+
+        responseArray = new JSONObject(result.getResponse().getContentAsString()).getJSONArray("content");
+
+        Assertions.assertEquals(responseArray.getJSONObject(0).getString("pointActionType"), SAVE.getDescription());
+        Assertions.assertEquals(responseArray.getJSONObject(0).getLong("point"), 1000L);
 
     }
 

@@ -1,6 +1,7 @@
 package com.example.demo.model.condition;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModelProperty;
 import jdk.nashorn.internal.ir.annotations.Ignore;
 import lombok.Getter;
@@ -21,7 +22,7 @@ public class PointHistoryCondition {
     @ApiModelProperty(value = "페이지당 표시 1 ~ 40")
     private int size = 20;
 
-    @Ignore
+    @JsonIgnore
     private Long memberId;
 
 }
